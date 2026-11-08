@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Управление каталогом</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="admin-page">
+  <div class="auth-gate" id="authGate">
+    <form class="auth-card" id="authForm" method="post" action="#" autocomplete="on">
+      <h1>Вход в управление</h1>
+      <p class="auth-card__hint">Доступ только для владельца сайта</p>
+      <label>
+        Логин
+        <input type="text" id="authLogin" name="username" required autocomplete="username" />
+      </label>
+      <label>
+        Пароль
+        <input type="password" id="authPass" name="password" required autocomplete="current-password" />
+      </label>
+      <p class="auth-error" id="authError" hidden>Неверный логин или пароль</p>
+      <button type="submit" class="btn auth-card__btn">Войти</button>
+    </form>
+  </div>
+  <header class="top">
+    <div class="wrap top__row">
+      <span class="brand">ДВЕРИ · админ</span>
+      <nav class="menu">
+        <a href="index.html">Открыть витрину</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap admin">
+    <section class="intro">
+      <h1>Управление</h1>
+      <p>Добавляйте свои вкладки витрины круглой кнопкой <strong>+</strong>. Клиенты видят только эти вкладки и карточки.</p>
+    </section>
+
+    <div class="admin-actions">
+      <button type="button" class="btn" id="btnExport">Скачать резервную копию</button>
+      <label class="btn btn--ghost">
+        Загрузить копию
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+      </label>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tabs" id="tabs"></div>
+      <button type="button" class="fab-plus" id="btnAddTab" title="Добавить вкладку" aria-label="Добавить вкладку">+</button>
+    </div>
+
+    <div class="tab-tools" id="tabTools" hidden>
+      <button type="button" class="btn btn--ghost btn--small" id="btnRenameTab">Переименовать вкладку</button>
+      <button type="button" class="btn btn--danger btn--small" id="btnDeleteTab">Удалить вкладку</button>
+    </div>
+
+    <form class="card form" id="itemForm">
+      <h2 id="formTitle">Новая позиция</h2>
+      <input type="hidden" id="editId" value="" />
+
+      <div class="drop" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*" multiple hidden />
+        <div class="drop__hint" id="dropHint">
+          <strong>Перетащите фото сюда</strong>
+          <span>можно несколько сразу · или нажмите, чтобы выбрать</span>
+        </div>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+
+      <label>
+        Название *
+        <input type="text" id="title" required maxlength="120" placeholder="Название товара или услуги" />
+      </label>
+
+      <label class="label-price">
+        Цена
+        <div class="price-row">
+          <input type="text" id="price" maxlength="40" placeholder="от 45 000 ₽" />
+          <div class="unit-picker" id="unitPicker">
+            <button type="button" class="unit-picker__btn" id="unitPickerBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span class="unit-picker__value" id="unitPickerValue">единица цены</span>
+              <span class="unit-picker__chev" aria-hidden="true"></span>
+            </button>
+            <div class="unit-picker__menu" id="unitPickerMenu" hidden role="listbox">
+              <div class="unit-picker__list" id="unitPickerList"></div>
+              <div class="unit-picker__footer">
+                <button type="button" class="unit-picker__custom-btn" id="btnCustomUnit">+ Свой вариант</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="unit-custom-field" id="unitCustomField" hidden>
+          <input type="text" id="priceUnitCustom" maxlength="30" placeholder="Например: за пог. м" />
+          <button type="button" class="btn btn--small" id="btnSaveCustomUnit">Ок</button>
+        </div>
+      </label>
+
+      <label>
+        Описание
+        <textarea id="description" rows="4" maxlength="1000" placeholder="Краткое описание..."></textarea>
+      </label>
+
+      <details class="more-fields" id="articleDetails">
+        <summary class="more-fields__summary">Артикул</summary>
+        <div class="more-fields__body">
+          <label>
+            <input type="text" id="article" maxlength="60" placeholder="000-000-000" />
+          </label>
+        </div>
+      </details>
+
+      <div class="form__row">
+        <button type="submit" class="btn" id="submitBtn">Добавить</button>
+        <button type="button" class="btn btn--ghost" id="cancelEdit" hidden>Отмена</button>
+        <button type="button" class="btn btn--danger" id="btnClearTab">Очистить этот раздел</button>
+      </div>
+    </form>
+
+    <section class="admin-list">
+      <h2>Позиции раздела <span id="adminCount"></span></h2>
+      <div class="list" id="adminList"></div>
+      <p class="empty" id="adminEmpty" hidden>В этом разделе пока пусто.</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__row">
+      <span>admin.html только для вас · клиентам дайте index.html</span>
+    </div>
+  </footer>
+
+  <div class="modal" id="tabModal" hidden>
+    <div class="modal__box modal__box--sm">
+      <button type="button" class="modal__close" id="tabModalClose" aria-label="Закрыть">×</button>
+      <h2 id="tabModalTitle">Новая вкладка</h2>
+      <p class="modal-hint">Например: «Фурнитура», «Акции», «Входные».</p>
+      <label>
+        Название вкладки
+        <input type="text" id="tabNameInput" maxlength="40" placeholder="Название" />
+      </label>
+      <div class="form__row" style="margin-top:14px">
+        <button type="button" class="btn" id="tabModalSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/store.js"></script>
+  <script src="js/auth-admin.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
