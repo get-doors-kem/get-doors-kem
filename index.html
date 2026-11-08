@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Каталог</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top__row">
+      <a href="index.html" class="brand">ДВЕРИ</a>
+      <nav class="menu" id="publicMenu"></nav>
+      <button type="button" class="cart-btn" id="cartBtn" title="Корзина" aria-label="Открыть корзину">
+        <svg class="cart-btn__icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14h9.6c.8 0 1.5-.5 1.7-1.2l2.3-6.5c.1-.4 0-.8-.2-1.1-.3-.3-.6-.4-1-.4H6.1L5.6 3.2C5.5 2.5 4.9 2 4.2 2H2v2h2l3.6 9.6L6.2 16c-.2.4-.2.8 0 1.2.2.3.6.5 1 .5H19v-2H8.4l.8-1.6z"/>
+        </svg>
+        <span class="cart-btn__label">Корзина</span>
+        <span class="cart-btn__badge" id="cartBadge" hidden>0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <h1 id="pageTitle">Каталог</h1>
+      <p>Карточки с ценами. Нажмите, чтобы открыть страницу товара.</p>
+    </section>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Поиск..." />
+      <span class="count" id="count"></span>
+    </div>
+
+    <div class="grid" id="catalog"></div>
+    <p class="empty" id="empty" hidden>В этом разделе пока нет позиций.</p>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__row">
+      <span>Продажа и установка дверей</span>
+    </div>
+  </footer>
+
+  <!-- Full-screen product page -->
+  <div class="product-page" id="productPage" hidden>
+    <div class="product-page__inner">
+      <button type="button" class="btn btn--ghost product-page__back" id="productBack">← Назад к каталогу</button>
+
+      <div class="product-layout">
+        <div class="gallery" id="gallery">
+          <div class="gallery__frame">
+            <img id="galleryImg" class="gallery__img" alt="" />
+          </div>
+          <button type="button" class="gallery__nav gallery__nav--prev" id="galleryPrev" aria-label="Предыдущее фото">‹</button>
+          <button type="button" class="gallery__nav gallery__nav--next" id="galleryNext" aria-label="Следующее фото">›</button>
+          <button type="button" class="gallery__fs" id="galleryFs" title="На весь экран" aria-label="Смотреть фото на весь экран">⛶</button>
+          <div class="gallery__dots" id="galleryDots"></div>
+        </div>
+
+        <div class="product-info">
+          <h1 id="productTitle"></h1>
+          <p class="product-info__article" id="productArticle" hidden></p>
+          <p class="product-info__price" id="productPrice"></p>
+          <p class="product-info__desc" id="productDesc"></p>
+          <div class="product-actions">
+            <div class="qty-stepper" id="productQty" aria-label="Количество">
+              <button type="button" class="qty-btn" id="productQtyDec" aria-label="Уменьшить">−</button>
+              <span class="qty-stepper__val" id="productQtyVal">1</span>
+              <button type="button" class="qty-btn" id="productQtyInc" aria-label="Увеличить">+</button>
+            </div>
+            <button type="button" class="btn btn--cart" id="addToCartBtn">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path fill="currentColor" d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14h9.6c.8 0 1.5-.5 1.7-1.2l2.3-6.5c.1-.4 0-.8-.2-1.1-.3-.3-.6-.4-1-.4H6.1L5.6 3.2C5.5 2.5 4.9 2 4.2 2H2v2h2l3.6 9.6L6.2 16c-.2.4-.2.8 0 1.2.2.3.6.5 1 .5H19v-2H8.4l.8-1.6z"/>
+              </svg>
+              В корзину
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Photo lightbox fullscreen -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button type="button" class="lightbox__close" id="lightboxClose" aria-label="Закрыть">×</button>
+    <button type="button" class="lightbox__nav lightbox__nav--prev" id="lightboxPrev" aria-label="Предыдущее">‹</button>
+    <button type="button" class="lightbox__nav lightbox__nav--next" id="lightboxNext" aria-label="Следующее">›</button>
+    <div class="lightbox__stage">
+      <img id="lightboxImg" class="lightbox__img" alt="" />
+    </div>
+    <div class="lightbox__dots" id="lightboxDots"></div>
+    <div class="lightbox__hint">Esc — закрыть · ← → листать</div>
+  </div>
+
+
+  <!-- Cart drawer -->
+  <div class="cart-overlay" id="cartOverlay"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="Корзина">
+    <div class="cart-drawer__head">
+      <h2>Корзина</h2>
+      <button type="button" class="cart-drawer__close" id="cartClose" aria-label="Закрыть">×</button>
+    </div>
+    <div class="cart-drawer__body" id="cartBody"></div>
+    <div class="cart-drawer__foot">
+      <button type="button" class="btn btn--ghost btn--small" id="cartClear">Очистить</button>
+      <p class="cart-drawer__note">Состав заказа можно отправить менеджеру</p>
+    </div>
+  </aside>
+
+  <script src="js/store.js"></script>
+    <script>
+  window.Cart = window.Cart || (function () {
+    var KEY = "doors_cart_v1";
+    function load() {
+      try {
+        var d = JSON.parse(localStorage.getItem(KEY) || "[]");
+        return Array.isArray(d) ? d.filter(function (x) { return x && x.id && x.title; }) : [];
+      } catch (e) { return []; }
+    }
+    function save(items) {
+      localStorage.setItem(KEY, JSON.stringify(items));
+      (window.__cartListeners || []).forEach(function (fn) { try { fn(load()); } catch (e) {} });
+    }
+    return {
+      load: load,
+      save: save,
+      count: function () { return load().reduce(function (s, x) { return s + (Number(x.qty) || 1); }, 0); },
+      add: function (item, qty) {
+        qty = Math.max(1, Math.min(99, Number(qty) || 1));
+        var id = String((item && (item.id || item.title)) || ("tmp-" + Date.now()));
+        var items = load();
+        var found = null;
+        for (var i = 0; i < items.length; i++) if (items[i].id === id) { found = items[i]; break; }
+        if (found) found.qty = Math.min(99, (Number(found.qty) || 1) + qty);
+        else items.push({
+          id: id,
+          title: String((item && item.title) || "Товар").slice(0, 120),
+          price: String((item && item.price) || "").slice(0, 40),
+          priceUnit: String((item && item.priceUnit) || "").slice(0, 30),
+          image: (item && typeof item.image === "string") ? item.image : "",
+          tabId: String((item && item.tabId) || ""),
+          tabName: String((item && item.tabName) || "").slice(0, 40),
+          article: String((item && item.article) || "").slice(0, 60),
+          qty: qty
+        });
+        save(items);
+        return load();
+      },
+      setQty: function (id, qty) {
+        id = String(id); qty = Number(qty) || 0;
+        var items = load();
+        if (qty <= 0) items = items.filter(function (x) { return x.id !== id; });
+        else items = items.map(function (x) { return x.id === id ? Object.assign({}, x, { qty: Math.min(99, qty) }) : x; });
+        save(items);
+      },
+      remove: function (id) { save(load().filter(function (x) { return x.id !== String(id); })); },
+      clear: function () { save([]); },
+      onChange: function (fn) {
+        window.__cartListeners = window.__cartListeners || [];
+        window.__cartListeners.push(fn);
+      },
+      notify: function () {
+        (window.__cartListeners || []).forEach(function (fn) { try { fn(load()); } catch (e) {} });
+      }
+    };
+  })();
+  </script>
+  <script src="js/catalog.js"></script>
+</body>
+</html>
