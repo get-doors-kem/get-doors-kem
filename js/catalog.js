@@ -150,7 +150,15 @@ window.Cart = Cart;
   var cartBody = document.getElementById("cartBody");
   var cartClose = document.getElementById("cartClose");
   var cartClear = document.getElementById("cartClear");
+  var cartOrder = document.getElementById("cartOrder");
+  var cartTotal = document.getElementById("cartTotal");
+  var cartTotalValue = document.getElementById("cartTotalValue");
+  var orderOverlay = document.getElementById("orderOverlay");
+  var orderMeta = document.getElementById("orderMeta");
+  var orderDownload = document.getElementById("orderDownload");
+  var orderClose = document.getElementById("orderClose");
   var addToCartBtn = document.getElementById("addToCartBtn");
+  var lastOrderItems = null;
   var productQtyVal = document.getElementById("productQtyVal");
   var productQtyDec = document.getElementById("productQtyDec");
   var productQtyInc = document.getElementById("productQtyInc");
@@ -495,6 +503,11 @@ window.Cart = Cart;
 
   productBack.addEventListener("click", closeProduct);
   document.addEventListener("keydown", function (e) {
+    var orderOpen = orderOverlay && !orderOverlay.hidden && orderOverlay.classList.contains("is-open");
+    if (orderOpen) {
+      if (e.key === "Escape") closeOrderSuccess();
+      return;
+    }
     var lbOpen = lightbox && !lightbox.hidden && lightbox.classList.contains("is-open");
     if (lbOpen) {
       if (e.key === "Escape") closeLightbox();
@@ -527,8 +540,238 @@ window.Cart = Cart;
     cartBadge.hidden = n < 1;
   }
 
+  function parsePriceNumber(priceStr) {
+    var digits = String(priceStr || "").replace(/[^\d]/g, "");
+    return digits ? Number(digits) : 0;
+  }
+
+  function priceHasFrom(priceStr) {
+    return /^\s*от\b/i.test(String(priceStr || "").trim());
+  }
+
+  function formatTotalRub(n) {
+    var digits = String(Math.round(n) || 0);
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " ₽";
+  }
+
+  function nowStamp() {
+    var now = new Date();
+    var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+    return {
+      dateStr:
+        pad(now.getDate()) + "." +
+        pad(now.getMonth() + 1) + "." +
+        now.getFullYear() + " · " +
+        pad(now.getHours()) + ":" +
+        pad(now.getMinutes()),
+      filePart:
+        now.getFullYear() +
+        pad(now.getMonth() + 1) +
+        pad(now.getDate()) +
+        "-" +
+        pad(now.getHours()) +
+        pad(now.getMinutes())
+    };
+  }
+
+  function summarizeCart(items) {
+    var total = 0;
+    var anyFrom = false;
+    var count = 0;
+    items.forEach(function (it) {
+      var qty = Math.max(1, Number(it.qty) || 1);
+      count += qty;
+      var unitPrice = parsePriceNumber(it.price);
+      if (unitPrice > 0) total += unitPrice * qty;
+      if (priceHasFrom(it.price)) anyFrom = true;
+    });
+    return { total: total, anyFrom: anyFrom, count: count };
+  }
+
+  function updateCartTotal(items) {
+    if (!cartTotal || !cartTotalValue) return;
+    if (!items || !items.length) {
+      cartTotal.hidden = true;
+      return;
+    }
+    var s = summarizeCart(items);
+    cartTotal.hidden = false;
+    cartTotalValue.textContent = (s.anyFrom ? "от " : "") + formatTotalRub(s.total);
+  }
+
+  function buildReceiptHtml(items) {
+    var stamp = nowStamp();
+    var s = summarizeCart(items);
+    var rows = items.map(function (it, i) {
+      var qty = Math.max(1, Number(it.qty) || 1);
+      var unitPrice = parsePriceNumber(it.price);
+      var lineSum = unitPrice * qty;
+      var priceFmt = typeof formatMoney === "function" ? formatMoney(it.price || "") : (it.price || "");
+      var unitPart = it.priceUnit ? " " + escapeHtml(it.priceUnit) : "";
+      var priceShow = priceFmt ? escapeHtml(priceFmt) + unitPart : "—";
+      return (
+        '<tr>' +
+          '<td class="n">' + (i + 1) + '</td>' +
+          '<td class="title">' +
+            '<div class="name">' + escapeHtml(it.title || "Товар") + '</div>' +
+            (it.article ? '<div class="art">арт. ' + escapeHtml(it.article) + '</div>' : '') +
+          '</td>' +
+          '<td class="price">' + priceShow + '</td>' +
+          '<td class="qty">' + qty + '</td>' +
+          '<td class="sum">' + (unitPrice > 0 ? escapeHtml(formatTotalRub(lineSum)) : "—") + '</td>' +
+        '</tr>'
+      );
+    }).join("");
+
+    return (
+'<!DOCTYPE html>\n' +
+'<html lang="ru">\n<head>\n' +
+'<meta charset="UTF-8" />\n' +
+'<meta name="viewport" content="width=device-width, initial-scale=1" />\n' +
+'<title>Чек — ДВЕРИ</title>\n' +
+'<style>\n' +
+'  :root {\n' +
+'    --bg: #f4f2ef; --card: #fffefb; --text: #1c1b1a; --muted: #6b6560;\n' +
+'    --line: #e4dfd8; --accent: #2f4a3c; --accent-soft: rgba(47,74,60,0.08);\n' +
+'  }\n' +
+'  * { box-sizing: border-box; }\n' +
+'  body {\n' +
+'    margin: 0; padding: 32px 16px 48px;\n' +
+'    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;\n' +
+'    background: var(--bg); color: var(--text); line-height: 1.45;\n' +
+'  }\n' +
+'  .sheet {\n' +
+'    width: min(100%, 640px); margin: 0 auto; background: var(--card);\n' +
+'    border: 1px solid var(--line); border-radius: 16px;\n' +
+'    box-shadow: 0 12px 36px rgba(28,27,26,0.08); overflow: hidden;\n' +
+'  }\n' +
+'  .head {\n' +
+'    padding: 28px 28px 20px; border-bottom: 1px solid var(--line);\n' +
+'    background: linear-gradient(180deg, #fffefb 0%, #f7f3ee 100%);\n' +
+'  }\n' +
+'  .brand {\n' +
+'    font-weight: 700; letter-spacing: 0.1em; font-size: 13px;\n' +
+'    color: var(--accent); margin: 0 0 10px;\n' +
+'  }\n' +
+'  h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; }\n' +
+'  .date { margin: 0; color: var(--muted); font-size: 14px; }\n' +
+'  .body { padding: 8px 0 0; }\n' +
+'  table { width: 100%; border-collapse: collapse; }\n' +
+'  th {\n' +
+'    text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.04em;\n' +
+'    text-transform: uppercase; color: var(--muted); padding: 12px 16px;\n' +
+'    border-bottom: 1px solid var(--line); background: var(--accent-soft);\n' +
+'  }\n' +
+'  td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }\n' +
+'  tr:last-child td { border-bottom: 0; }\n' +
+'  .n { width: 36px; color: var(--muted); }\n' +
+'  .name { font-weight: 600; }\n' +
+'  .art { margin-top: 3px; font-size: 12px; color: var(--muted); }\n' +
+'  .price, .qty, .sum { white-space: nowrap; }\n' +
+'  .qty { text-align: center; width: 48px; }\n' +
+'  .sum { text-align: right; font-weight: 600; color: var(--accent); width: 110px; }\n' +
+'  .foot {\n' +
+'    padding: 18px 28px 24px; border-top: 1px solid var(--line);\n' +
+'    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px;\n' +
+'  }\n' +
+'  .total-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }\n' +
+'  .total-value { font-size: 24px; font-weight: 700; color: var(--accent); }\n' +
+'  .hint { margin: 0; width: 100%; font-size: 12px; color: var(--muted); }\n' +
+'  .thanks {\n' +
+'    padding: 0 28px 24px; color: var(--muted); font-size: 13px;\n' +
+'  }\n' +
+'  @media print {\n' +
+'    body { background: #fff; padding: 0; }\n' +
+'    .sheet { box-shadow: none; border: 0; border-radius: 0; width: 100%; }\n' +
+'  }\n' +
+'</style>\n</head>\n<body>\n' +
+'<div class="sheet">\n' +
+'  <div class="head">\n' +
+'    <p class="brand">ДВЕРИ</p>\n' +
+'    <h1>Чек заказа</h1>\n' +
+'    <p class="date">' + escapeHtml(stamp.dateStr) + '</p>\n' +
+'  </div>\n' +
+'  <div class="body">\n' +
+'    <table>\n' +
+'      <thead><tr><th>#</th><th>Позиция</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr></thead>\n' +
+'      <tbody>\n' + rows + '\n      </tbody>\n' +
+'    </table>\n' +
+'  </div>\n' +
+'  <div class="foot">\n' +
+'    <span class="total-label">Итого' + (s.anyFrom ? ' (от)' : '') + '</span>\n' +
+'    <span class="total-value">' + escapeHtml(formatTotalRub(s.total)) + '</span>\n' +
+(s.anyFrom ? '    <p class="hint">Цены «от» — ориентировочные, точную сумму уточнит менеджер</p>\n' : '') +
+'  </div>\n' +
+'  <p class="thanks">Спасибо за заказ · продажа и установка дверей</p>\n' +
+'</div>\n</body>\n</html>\n'
+    );
+  }
+
+  function downloadReceipt(items) {
+    var html = buildReceiptHtml(items);
+    var blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    var a = document.createElement("a");
+    var stamp = nowStamp();
+    a.href = URL.createObjectURL(blob);
+    a.download = "chek-" + stamp.filePart + ".html";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      URL.revokeObjectURL(a.href);
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 500);
+  }
+
+  function openOrderSuccess(items) {
+    lastOrderItems = items.slice();
+    var s = summarizeCart(items);
+    if (orderMeta) {
+      orderMeta.innerHTML =
+        '<span><strong>' + s.count + '</strong> поз.</span>' +
+        '<span class="order-card__sep">·</span>' +
+        '<span><strong>' + escapeHtml((s.anyFrom ? "от " : "") + formatTotalRub(s.total)) + '</strong></span>';
+    }
+    if (orderOverlay) {
+      orderOverlay.hidden = false;
+      requestAnimationFrame(function () {
+        orderOverlay.classList.add("is-open");
+      });
+    }
+  }
+
+  function closeOrderSuccess() {
+    if (!orderOverlay) return;
+    orderOverlay.classList.remove("is-open");
+    setTimeout(function () {
+      if (!orderOverlay.classList.contains("is-open")) {
+        orderOverlay.hidden = true;
+      }
+    }, 280);
+  }
+
+  function placeOrder() {
+    var items = Cart.load();
+    if (!items.length) {
+      showCartToast("Корзина пуста");
+      return;
+    }
+    closeCart();
+    openOrderSuccess(items);
+    Cart.clear();
+    renderCart();
+    syncAddButtonsFromCart();
+  }
+
+  function updateOrderButton() {
+    if (!cartOrder) return;
+    var n = Cart.count();
+    cartOrder.disabled = n < 1;
+  }
+
   function renderCart() {
     var items = Cart.load();
+    updateOrderButton();
+    updateCartTotal(items);
     if (!items.length) {
       cartBody.innerHTML = '<p class="cart-empty">Корзина пуста</p>';
       return;
@@ -743,6 +986,28 @@ window.Cart = Cart;
     });
   }
 
+  if (cartOrder) {
+    cartOrder.addEventListener("click", function () {
+      placeOrder();
+    });
+  }
+  if (orderDownload) {
+    orderDownload.addEventListener("click", function () {
+      if (lastOrderItems && lastOrderItems.length) {
+        downloadReceipt(lastOrderItems);
+        showCartToast("Чек скачан");
+      }
+    });
+  }
+  if (orderClose) {
+    orderClose.addEventListener("click", closeOrderSuccess);
+  }
+  if (orderOverlay) {
+    orderOverlay.addEventListener("click", function (e) {
+      if (e.target === orderOverlay) closeOrderSuccess();
+    });
+  }
+
   if (cartBody) {
     cartBody.addEventListener("click", function (e) {
       var line = e.target.closest(".cart-line");
@@ -781,10 +1046,12 @@ window.Cart = Cart;
 
   Cart.onChange(function () {
     updateCartBadge();
+    updateOrderButton();
     if (cartDrawer && cartDrawer.classList.contains("is-open")) renderCart();
     syncAddButtonsFromCart();
   });
   updateCartBadge();
+  updateOrderButton();
   renderCart();
 
   renderMenu();

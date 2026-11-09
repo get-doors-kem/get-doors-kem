@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-   <link rel="icon" type="image/x-icon" href="pixel_door_icon_123714.ico">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Каталог</title>
@@ -105,10 +104,40 @@
     </div>
     <div class="cart-drawer__body" id="cartBody"></div>
     <div class="cart-drawer__foot">
+      <div class="cart-total" id="cartTotal" hidden>
+        <span class="cart-total__label">Итого</span>
+        <span class="cart-total__value" id="cartTotalValue">0 ₽</span>
+      </div>
+      <button type="button" class="btn btn--cart btn--order" id="cartOrder" disabled>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+        Оформить заказ
+      </button>
       <button type="button" class="btn btn--ghost btn--small" id="cartClear">Очистить</button>
-      <p class="cart-drawer__note">Состав заказа можно отправить менеджеру</p>
+      <p class="cart-drawer__note">После оформления можно скачать красивый чек</p>
     </div>
   </aside>
+
+  <!-- Order success -->
+  <div class="order-overlay" id="orderOverlay" hidden>
+    <div class="order-card" role="dialog" aria-labelledby="orderTitle" aria-modal="true">
+      <div class="order-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="48" height="48">
+          <circle cx="24" cy="24" r="22" fill="rgba(47,74,60,0.12)"/>
+          <path fill="#2f4a3c" d="M20.5 31.2 12.8 23.5l2.1-2.1 5.6 5.6 12-12 2.1 2.1z"/>
+        </svg>
+      </div>
+      <h2 id="orderTitle">Заказ оформлен</h2>
+      <p class="order-card__text">Состав заказа готов. Скачайте чек — в нём названия, артикулы, цены и итог.</p>
+      <div class="order-card__meta" id="orderMeta"></div>
+      <div class="order-card__actions">
+        <button type="button" class="btn btn--cart" id="orderDownload">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Скачать чек
+        </button>
+        <button type="button" class="btn btn--ghost" id="orderClose">Закрыть</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/store.js"></script>
     <script>
